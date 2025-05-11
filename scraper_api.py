@@ -19,13 +19,16 @@ app.add_middleware(
 
 def start_browser():
     chromedriver_autoinstaller.install()
+
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.binary_location = "/usr/bin/chromium"
+
     return webdriver.Chrome(options=options)
+
 
 @app.get("/scrape")
 def scrape(url: str = Query(...)):
