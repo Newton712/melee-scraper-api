@@ -18,20 +18,21 @@ app.add_middleware(
 )
 
 def start_browser():
-    # Vérifie si chromium est installé et détectable
-    chrome_path = shutil.which("chromium") or shutil.which("google-chrome") or "/usr/bin/chromium"
+    # Cherche Google Chrome
+    chrome_path = shutil.which("google-chrome") or "/usr/bin/google-chrome"
 
     if not os.path.exists(chrome_path):
-        raise RuntimeError("❌ Chromium non trouvé sur /usr/bin/chromium. Vérifie ton Dockerfile.")
+        raise RuntimeError("❌ Google Chrome non trouvé sur /usr/bin/google-chrome. Vérifie ton Dockerfile.")
 
     options = Options()
-    options.add_argument("--headless")
+    options.add_argument("--headless=new")  # plus fiable sur Chrome stable
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.binary_location = chrome_path
 
     return webdriver.Chrome(options=options)
+
 
 @app.get("/scrape")
 def scrape(url: str = Query(...)):
