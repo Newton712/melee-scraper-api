@@ -1,43 +1,46 @@
-# scraper_api.py
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from datetime import datetime, timedelta
-import chromedriver_autoinstaller
+import os
+import shutil
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # sécurise avec le domaine Streamlit en prod
+    allow_origins=["*"],  # sécuriser plus tard si nécessaire
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 def start_browser():
-    chromedriver_autoinstaller.install()
+    # Vérifie si chromium est installé et détectable
+    chrome_path = shutil.which("chromium") or shutil.which("google-chrome") or "/usr/bin/chromium"
+
+    if not os.path.exists(chrome_path):
+        raise RuntimeError("❌ Chromium non trouvé sur /usr/bin/chromium. Vérifie ton Dockerfile.")
 
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    options.binary_location = "/usr/bin/chromium"
+    options.binary_location = chrome_path
 
     return webdriver.Chrome(options=options)
-
 
 @app.get("/scrape")
 def scrape(url: str = Query(...)):
     driver = start_browser()
     driver.get(url)
 
+    tournament_id = url.split("/")[-1]
     tournament_name = driver.find_element(By.CSS_SELECTOR, "h3.mb-1").text.strip()
     raw_date = driver.find_element(By.CSS_SELECTOR, "span[data-toggle='datetime']").get_attribute("data-value").strip()
-    tournament_id = url.split("/")[-1]
     dt = datetime.strptime(raw_date, "%m/%d/%Y %I:%M:%S %p") + timedelta(hours=2)
     formatted_date = dt.strftime("%d/%m/%Y %H:%M CEST")
 
