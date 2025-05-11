@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 from datetime import datetime, timedelta
 import os
 import shutil
@@ -38,9 +41,15 @@ def start_browser():
 def scrape(url: str = Query(...)):
     driver = start_browser()
     driver.get(url)
+    
+    WebDriverWait(driver, 15).until(
+    EC.presence_of_element_located((By.CSS_SELECTOR, "h3.mb-1")))
+    tournament_name = driver.find_element(By.CSS_SELECTOR, "h3.mb-1").text.strip()
+
 
     tournament_id = url.split("/")[-1]
-    tournament_name = driver.find_element(By.CSS_SELECTOR, "h3.mb-1").text.strip()
+
+
     raw_date = driver.find_element(By.CSS_SELECTOR, "span[data-toggle='datetime']").get_attribute("data-value").strip()
     dt = datetime.strptime(raw_date, "%m/%d/%Y %I:%M:%S %p") + timedelta(hours=2)
     formatted_date = dt.strftime("%d/%m/%Y %H:%M CEST")
@@ -74,8 +83,15 @@ def scrape(url: str = Query(...)):
             })
         except:
             continue
+    with open("page_debug.html", "w", encoding="utf-8") as f:
+        f.write(driver.page_source)
 
     driver.quit()
+
+
+
+
+
 
     return {
         "tournament": tournament,
